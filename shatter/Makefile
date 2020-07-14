@@ -1,5 +1,5 @@
 INCLUDES	= -I/usr/include
-LIBS		= -L/lib -lm
+LIBS		= -L/lib -lsndfile -lm
 PROGS = shatter
 
 CC = gcc

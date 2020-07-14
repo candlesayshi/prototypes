@@ -4,6 +4,7 @@
     which is released under an LGPL license - https://www.gnu.org/licenses/lgpl-3.0.html
 */
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sndfile.h>
 #include "shatter_dat.h"
@@ -19,7 +20,7 @@ int main(int argc, char** argv)
     // variables that handle the files
     SNDFILE* infile;
     SNDFILE* outfile;
-    char filename[64];
+    char filename[] = {"shattered-output.wav"};
     SF_INFO info;
     unsigned long filesize;
 
@@ -54,8 +55,8 @@ int main(int argc, char** argv)
         error++;
         goto exit;
     }
-    strncpy(filename,argv[ARG_INFILE],strlen(argv[ARG_INFILE]) - 4);
-    strcat(filename,"-shattered.wav");
+//    strncpy(filename,argv[ARG_INFILE],nchars);
+  //  strcat(filename,ext);
 
     // if that's all okay, create the output file
     outfile = sf_open(filename,SFM_WRITE,&info);
@@ -80,18 +81,9 @@ int main(int argc, char** argv)
         goto exit;
     }
 
+    // get filesize
     filesize = sf_seek(infile,0,SEEK_END);
-
     sf_seek(infile,0,SEEK_SET);
-
-    unsigned long sizecompare = 0;
-
-    while(sizecompare > 0){
-        int frame = sf_readf_float(infile,inframe,nframes);
-        sizecompare += frame;
-    }
-
-    printf("seek size = %ld\nread size = %ld\n",filesize,sizecompare);
 
     exit:
 
