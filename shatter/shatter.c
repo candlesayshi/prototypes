@@ -5,7 +5,6 @@
 */
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <sndfile.h>
 #include "shatter_dat.h"
 
@@ -55,8 +54,6 @@ int main(int argc, char** argv)
         error++;
         goto exit;
     }
-//    strncpy(filename,argv[ARG_INFILE],nchars);
-  //  strcat(filename,ext);
 
     // if that's all okay, create the output file
     outfile = sf_open(filename,SFM_WRITE,&info);
