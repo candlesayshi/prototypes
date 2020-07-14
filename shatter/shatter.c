@@ -48,13 +48,6 @@ int main(int argc, char** argv)
         goto exit;
     }
 
-    // set the filename for the output file;
-    if(strlen(argv[ARG_INFILE]) >= 48){
-        printf("Filename too long, I guess?\n");
-        error++;
-        goto exit;
-    }
-
     // if that's all okay, create the output file
     outfile = sf_open(filename,SFM_WRITE,&info);
     if(outfile == NULL){
@@ -81,6 +74,8 @@ int main(int argc, char** argv)
     // get filesize
     filesize = sf_seek(infile,0,SEEK_END);
     sf_seek(infile,0,SEEK_SET);
+
+    printf("Done. Output saved to %s\n",filename);
 
     exit:
 

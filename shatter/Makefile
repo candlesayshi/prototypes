@@ -2,11 +2,12 @@ INCLUDES	= -I/usr/include
 LIBS		= -L/lib -lsndfile -lm
 PROGS = shatter
 
+# make sure to check that libsndfile is installed correctly
+
 CC = gcc
 
 all: $(PROGS)
 
-# test programs are not included in the 'make all' command
 shatter: shatter.c
 	$(CC) -o shatter shatter.c $(INCLUDES) $(LIBS)
 

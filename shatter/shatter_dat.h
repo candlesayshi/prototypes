@@ -8,6 +8,7 @@ typedef struct shard
 
 typedef struct layer
 {
+    int play;               // a flag to determine if the layer is active
     unsigned long size;     // the number of frames in the audio file
     double amp;             // amplitude of the layer - usually (global amp)/(number of layers)
     unsigned long index;    // position in the audio file
