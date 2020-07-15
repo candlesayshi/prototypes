@@ -10,7 +10,9 @@ typedef struct layer
 {
     int play;               // a flag to determine if the layer is active
     unsigned long size;     // the number of frames in the audio file
-    double amp;             // amplitude of the layer - usually (global amp)/(number of layers)
+    double ampfac;          // amplitude of the layer - usually 1.0/(number of layers)
     unsigned long index;    // position in the audio file
 } LAYER;
 
+// initalize audio layer
+LAYER layer_init(int layers, unsigned long filesize);

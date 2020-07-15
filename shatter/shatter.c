@@ -67,8 +67,10 @@ int main(int argc, char** argv)
     }
 
     // get filesize
-    filesize = sf_seek(infile,0,SEEK_END);
-    sf_seek(infile,0,SEEK_SET);
+    filesize = info.frames;
+
+    // calculate size of output file
+    totalsamples = length_secs * info.samplerate;
 
     // allocate memory for the I/O buffers
     inframe = (float*)malloc(sizeof(float) * filesize);
@@ -77,7 +79,7 @@ int main(int argc, char** argv)
         error++;
         goto exit;
     }
-    
+
     // fill the input buffer (find zero crossings later in this loop)
     for(long i = 0; i < filesize; i++){
         framesread = sf_read_float(infile,&curframe,1);
