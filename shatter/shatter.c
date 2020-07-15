@@ -22,6 +22,7 @@ int main(int argc, char** argv)
     char filename[] = {"shattered-output.wav"};
     SF_INFO info;
     unsigned long filesize;
+    double length_secs;
 
     // variables that handle the read/write buffers
     float* inframe = NULL;
@@ -29,6 +30,7 @@ int main(int argc, char** argv)
     int nframes = NFRAMES;
 
     // variable that handle the layers and shards
+    int layers;
     LAYER** curlayer;
     SHARD** curshard;
 
@@ -48,6 +50,10 @@ int main(int argc, char** argv)
         goto exit;
     }
 
+    // get filesize
+    filesize = sf_seek(infile,0,SEEK_END);
+    sf_seek(infile,0,SEEK_SET);
+
     // if that's all okay, create the output file
     outfile = sf_open(filename,SFM_WRITE,&info);
     if(outfile == NULL){
@@ -57,7 +63,7 @@ int main(int argc, char** argv)
     }
 
     // allocate memory for the I/O buffers
-    inframe = (float*)malloc(sizeof(float) * nframes * info.channels);
+    inframe = (float*)malloc(sizeof(float) * filesize);
     if(inframe == NULL){
         printf("Error allocating memory for input.\n");
         error++;
@@ -70,10 +76,6 @@ int main(int argc, char** argv)
         error++;
         goto exit;
     }
-
-    // get filesize
-    filesize = sf_seek(infile,0,SEEK_END);
-    sf_seek(infile,0,SEEK_SET);
 
     printf("Done. Output saved to %s\n",filename);
 
