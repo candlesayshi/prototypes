@@ -17,8 +17,8 @@ int main(int argc, char** argv)
     int error = 0;
 
     // variables that handle the files
-    SNDFILE* infile;
-    SNDFILE* outfile;
+    SNDFILE* infile = NULL;
+    SNDFILE* outfile = NULL;
     char filename[] = {"shattered-output.wav"};
     SF_INFO info;
     unsigned long filesize;
@@ -27,7 +27,11 @@ int main(int argc, char** argv)
     // variables that handle the read/write buffers
     float* inframe = NULL;
     float* outframe = NULL;
+    float curframe;
     int nframes = NFRAMES;
+    long framesread;
+    long frameswrite;
+    long totalsamples;
 
     // variable that handle the layers and shards
     int layers;
@@ -49,10 +53,43 @@ int main(int argc, char** argv)
         error++;
         goto exit;
     }
+    length_secs = atof(argv[ARG_LENGTH]);
+    if(length_secs < 0.0){
+        printf("Length cannot be less than 0.0 seconds.\n");
+        error++;
+        goto exit;
+    }
+    layers = atoi(argv[ARG_LAYERS]);
+    if(layers <= 0){
+        printf("Number of layers cannot be 0 or less.\n");
+        error++;
+        goto exit;
+    }
 
     // get filesize
     filesize = sf_seek(infile,0,SEEK_END);
     sf_seek(infile,0,SEEK_SET);
+
+    // allocate memory for the I/O buffers
+    inframe = (float*)malloc(sizeof(float) * filesize);
+    if(inframe == NULL){
+        printf("Error allocating memory for input.\n");
+        error++;
+        goto exit;
+    }
+    
+    // fill the input buffer (find zero crossings later in this loop)
+    for(long i = 0; i < filesize; i++){
+        framesread = sf_read_float(infile,&curframe,1);
+        inframe[i] = curframe;
+    }
+
+    outframe = (float*)malloc(sizeof(float) * nframes * info.channels);
+    if(outframe == NULL){
+        printf("Error allocating memory for output.\n");
+        error++;
+        goto exit;
+    }
 
     // if that's all okay, create the output file
     outfile = sf_open(filename,SFM_WRITE,&info);
@@ -62,19 +99,11 @@ int main(int argc, char** argv)
         goto exit;
     }
 
-    // allocate memory for the I/O buffers
-    inframe = (float*)malloc(sizeof(float) * filesize);
-    if(inframe == NULL){
-        printf("Error allocating memory for input.\n");
-        error++;
-        goto exit;
-    }
+    while(frameswrite < totalsamples){
+        for(long i = 0; i < nframes; i++){
 
-    outframe = (float*)malloc(sizeof(float) * nframes * info.channels);
-    if(outframe == NULL){
-        printf("Error allocating memory for output.\n");
-        error++;
-        goto exit;
+        }
+        frameswrite += sf_write_float(outfile,&outframe,nframes);
     }
 
     printf("Done. Output saved to %s\n",filename);
