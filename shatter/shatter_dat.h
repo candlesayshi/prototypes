@@ -15,4 +15,10 @@ typedef struct layer
 } LAYER;
 
 // initalize audio layer
-LAYER layer_init(int layers, unsigned long filesize);
+void layer_init(LAYER* curlayer, int layers, unsigned long filesize);
+
+// get the value from the layer
+float layer_tick(LAYER* layer, float* inframe);
+
+// layer destruction function
+void destroy_layer(LAYER** thislayer, int layers);

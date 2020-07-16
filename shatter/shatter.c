@@ -35,8 +35,8 @@ int main(int argc, char** argv)
 
     // variable that handle the layers and shards
     int layers;
-    LAYER** curlayer;
-    SHARD** curshard;
+    LAYER** curlayer = NULL;
+    SHARD** curshard = NULL;
 
     printf("SHATTER: shatters an audio file over a number of layers\n");
     if(argc != ARG_NARGS){
@@ -66,11 +66,9 @@ int main(int argc, char** argv)
         goto exit;
     }
 
-    // get filesize
-    filesize = info.frames;
-
-    // calculate size of output file
-    totalsamples = length_secs * info.samplerate;
+    /**** necessary calculations ****/
+    filesize = info.frames;                         // get number of samples in input file
+    totalsamples = length_secs * info.samplerate;   // calculate size of output file
 
     // allocate memory for the I/O buffers
     inframe = (float*)malloc(sizeof(float) * filesize);
@@ -86,13 +84,25 @@ int main(int argc, char** argv)
         inframe[i] = curframe;
     }
 
+    // build the layers
+    curlayer = (LAYER**)malloc(sizeof(LAYER) * layers);
+    for(int i = 0; i < layers; i++){
+        curlayer[i] = (LAYER*)malloc(sizeof(LAYER));
+        layer_init(curlayer[i],layers,filesize);
+        if(curlayer[i] == NULL){
+            printf("Error creating audio layer.\n");
+            error++;
+            goto exit;
+        }
+    }
+
+    /**** get the output ready ****/
     outframe = (float*)malloc(sizeof(float) * nframes * info.channels);
     if(outframe == NULL){
         printf("Error allocating memory for output.\n");
         error++;
         goto exit;
     }
-
     // if that's all okay, create the output file
     outfile = sf_open(filename,SFM_WRITE,&info);
     if(outfile == NULL){
@@ -103,14 +113,16 @@ int main(int argc, char** argv)
 
     while(frameswrite < totalsamples){
         for(long i = 0; i < nframes; i++){
-
+            for(int j = 0; j < layers; j++){
+                outframe[i+j] = layer_tick(curlayer[j],inframe);
+            }
         }
-        frameswrite += sf_write_float(outfile,&outframe,nframes);
+        frameswrite += sf_write_float(outfile,outframe,nframes);
     }
 
     printf("Done. Output saved to %s\n",filename);
 
-    exit:
+exit:
 
     if(infile){
         if(sf_close(infile)){
@@ -122,8 +134,10 @@ int main(int argc, char** argv)
             printf("Error closing output file.\n");
         }
     }
-    if(inframe) free(inframe);
+    if(inframe)  free(inframe);
     if(outframe) free(outframe);
+    if(curlayer) destroy_layer(curlayer,layers);
+    if(curshard) free(curshard);
 
     return 0;
 }

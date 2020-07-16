@@ -1,13 +1,40 @@
 /* shatter_dat.c - source to hold unique functions */
 #include "shatter_dat.h"
+#include <stdio.h>
+#include <stdlib.h>
 
-LAYER layer_init(int layers, unsigned long filesize)
+// initialize audio layer
+void layer_init(LAYER* curlayer, int layers, unsigned long filesize)
 {
-    LAYER layer;
-    layer.play = 1;
-    layer.ampfac = 1.0 / (double) layers;
-    layer.size = filesize;
-    layer.index = 0;
+    curlayer->play = 1;
+    curlayer->ampfac = (1.0 / (double)layers);
+    curlayer->size = filesize;
+    curlayer->index = 0;
+}
 
-    return layer;
+// get the value from the layer
+float layer_tick(LAYER* layer, float* inframe)
+{
+    float thisframe = 0.0;
+    float ampfac = layer->ampfac;
+
+    if(layer->play){
+        thisframe = inframe[layer->index] * ampfac;
+        layer->index += 1;
+        if(layer->index > layer->size){
+            layer->index = 0;
+        }
+    }
+    
+    return thisframe;
+}
+
+// layer destruction function
+void destroy_layer(LAYER** thislayer, int layers){
+    for(int i = 0; i < layers; i++){
+        free(thislayer[i]);
+        thislayer[i] == NULL;
+    }
+    free(thislayer);
+    thislayer == NULL;
 }

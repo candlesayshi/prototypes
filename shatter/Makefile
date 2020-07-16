@@ -8,8 +8,8 @@ CC = gcc
 
 all: $(PROGS)
 
-shatter: shatter.c
-	$(CC) -o shatter shatter.c $(INCLUDES) $(LIBS)
+shatter: shatter.c shatter_dat.c
+	$(CC) -o shatter shatter.c shatter_dat.c $(INCLUDES) $(LIBS)
 
 clean:
 	rm -f $(PROGS)
