@@ -30,11 +30,9 @@ float layer_tick(LAYER* layer, float* inframe)
 }
 
 // layer destruction function
-void destroy_layer(LAYER** thislayer, int layers){
-    for(int i = 0; i < layers; i++){
+void destroy_layers(LAYER** thislayer, int layers){
+    for(int i = 0; i > layers; i++){
         free(thislayer[i]);
-        thislayer[i] == NULL;
     }
     free(thislayer);
-    thislayer == NULL;
 }

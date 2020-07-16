@@ -21,4 +21,4 @@ void layer_init(LAYER* curlayer, int layers, unsigned long filesize);
 float layer_tick(LAYER* layer, float* inframe);
 
 // layer destruction function
-void destroy_layer(LAYER** thislayer, int layers);
+void destroy_layers(LAYER** thislayer, int layers);

@@ -25,8 +25,8 @@ int main(int argc, char** argv)
     double length_secs;
 
     // variables that handle the read/write buffers
-    float* inframe = NULL;
-    float* outframe = NULL;
+    float* inframe;
+    float* outframe;
     float curframe;
     int nframes = NFRAMES;
     long framesread;
@@ -85,7 +85,7 @@ int main(int argc, char** argv)
     }
 
     // build the layers
-    curlayer = (LAYER**)malloc(sizeof(LAYER) * layers);
+    curlayer = (LAYER**)malloc(sizeof(LAYER*) * layers);
     for(int i = 0; i < layers; i++){
         curlayer[i] = (LAYER*)malloc(sizeof(LAYER));
         layer_init(curlayer[i],layers,filesize);
@@ -113,9 +113,11 @@ int main(int argc, char** argv)
 
     while(frameswrite < totalsamples){
         for(long i = 0; i < nframes; i++){
+            float curframe = 0.0;
             for(int j = 0; j < layers; j++){
-                outframe[i+j] = layer_tick(curlayer[j],inframe);
+                curframe += layer_tick(curlayer[j],inframe);
             }
+            outframe[i] = curframe;
         }
         frameswrite += sf_write_float(outfile,outframe,nframes);
     }
@@ -124,19 +126,21 @@ int main(int argc, char** argv)
 
 exit:
 
-    if(infile){
-        if(sf_close(infile)){
-            printf("Error closing %s\n",argv[ARG_INFILE]);
-        }
-    }
     if(outfile){
         if(sf_close(outfile)){
             printf("Error closing output file.\n");
         }
     }
+    if(infile){
+        if(sf_close(infile)){
+            printf("Error closing %s\n",argv[ARG_INFILE]);
+        }
+    }
     if(inframe)  free(inframe);
     if(outframe) free(outframe);
-    if(curlayer) destroy_layer(curlayer,layers);
+    if(curlayer){
+        destroy_layers(curlayer,layers);
+    }
     if(curshard) free(curshard);
 
     return 0;
