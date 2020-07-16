@@ -69,6 +69,11 @@ int main(int argc, char** argv)
     /**** necessary calculations ****/
     filesize = info.frames;                         // get number of samples in input file
     totalsamples = length_secs * info.samplerate;   // calculate size of output file
+    if(info.channels > 1){
+        printf("Currently only mono soundfiles are supported.\n");
+        error++;
+        goto exit;
+    }
 
     // allocate memory for the I/O buffers
     inframe = (float*)malloc(sizeof(float) * filesize);
@@ -81,6 +86,11 @@ int main(int argc, char** argv)
     // fill the input buffer (find zero crossings later in this loop)
     for(long i = 0; i < filesize; i++){
         framesread = sf_read_float(infile,&curframe,1);
+        if(framesread != 1){
+            printf("Error reading audio frame from input.\n");
+            error++;
+            goto exit;
+        }
         inframe[i] = curframe;
     }
 
@@ -125,7 +135,9 @@ int main(int argc, char** argv)
     printf("Done. Output saved to %s\n",filename);
 
 exit:
-
+    if(error){
+        printf("%d error(s)\n",error);
+    }
     if(outfile){
         if(sf_close(outfile)){
             printf("Error closing output file.\n");
