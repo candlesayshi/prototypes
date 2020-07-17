@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sndfile.h>
+#include <time.h>
 #include "shatter_dat.h"
 
 #define NFRAMES (1024); // defines the size of the read/write buffer
@@ -48,6 +49,9 @@ int main(int argc, char** argv)
                 "usage: shatter infile length_in_seconds layers\n");
         return 1;
     }
+
+    // seed the randomness
+    srand(time(NULL));
 
     /******* handle the arguments *******/
 
@@ -124,6 +128,13 @@ int main(int argc, char** argv)
         }
     }
 
+    // build the shards
+    curshard = (SHARD**)malloc(sizeof(SHARD*) * layers);
+    for(int i = 0; i < layers; i++){
+        curshard[i] = (SHARD*)malloc(sizeof(SHARD));
+        new_shard();
+    }
+
     /**** get the output ready ****/
     outframe = (float*)malloc(sizeof(float) * nframes * info.channels);
     if(outframe == NULL){
@@ -139,6 +150,7 @@ int main(int argc, char** argv)
         goto exit;
     }
 
+    /**** processing loop that writes to the output ****/
     while(frameswrite < totalsamples){
         for(long i = 0; i < nframes; i++){
             float curframe = 0.0;
@@ -171,7 +183,9 @@ exit:
     if(curlayer){
         destroy_layers(curlayer,layers);
     }
-    if(curshard) free(curshard);
+    if(curshard){
+        destroy_shards(curshard,layers);
+    }
     if(zero_crossings) free(zero_crossings);
 
     return 0;

@@ -17,8 +17,14 @@ typedef struct layer
 // initalize audio layer
 void layer_init(LAYER* curlayer, int layers, unsigned long filesize);
 
+// initialize and set values for new shard
+void new_shard(SHARD* curshard, long* zc_array, long zc_count, long min, long max);
+
 // get the value from the layer
 float layer_tick(LAYER* layer, float* inframe);
 
 // layer destruction function
 void destroy_layers(LAYER** thislayer, int layers);
+
+// shard destruction function
+void destroy_shards(SHARD** thisshard, int layers);
