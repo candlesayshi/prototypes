@@ -35,6 +35,10 @@ int main(int argc, char** argv)
 
     // variable that handle the layers and shards
     int layers;
+    long zc_count = 0; // a counter to track zero crossings for building an array
+    long* zero_crossings = NULL; // array to hold the zero crossing locations
+    long min; // min and max of the shard size, should be user changable in time
+    long max;
     LAYER** curlayer = NULL;
     SHARD** curshard = NULL;
 
@@ -69,6 +73,8 @@ int main(int argc, char** argv)
     /**** necessary calculations ****/
     filesize = info.frames;                         // get number of samples in input file
     totalsamples = length_secs * info.samplerate;   // calculate size of output file
+    min = ((double)min * 0.001) * info.samplerate;  // calculate min and max of shard size
+    max = ((double)max * 0.001) * info.samplerate;
     if(info.channels > 1){
         printf("Currently only mono soundfiles are supported.\n");
         error++;
@@ -93,6 +99,18 @@ int main(int argc, char** argv)
         }
         inframe[i] = curframe;
     }
+
+    // find zero crossings and build zero crossings array
+    /*  I could probably do this at the same time as I copy the audio file into the
+        buffer, but I was having problems with the zero_crossings array. So, I'm
+        keeping it compartmentalizing it all for now */
+    for(long i = 0; i < filesize; i++){
+        if(inframe[i] == 0.0){
+            zero_crossings = (long*)realloc(zero_crossings,sizeof(long) * ++zc_count);
+            zero_crossings[zc_count-1] = i;
+        }
+    }
+    zero_crossings[zc_count] = filesize; // make last value the end of file
 
     // build the layers
     curlayer = (LAYER**)malloc(sizeof(LAYER*) * layers);
@@ -154,6 +172,7 @@ exit:
         destroy_layers(curlayer,layers);
     }
     if(curshard) free(curshard);
+    if(zero_crossings) free(zero_crossings);
 
     return 0;
 }
