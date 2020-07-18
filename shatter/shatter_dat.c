@@ -17,26 +17,29 @@ void layer_init(LAYER* curlayer, int layers, unsigned long filesize)
 void new_shard(SHARD* curshard, long* zc_array, long zc_count, long min, long max)
 {
     double r1, r2;
-    double start, end;
+    long start, end, val1, val2;
     double rand_range = ((double)zc_count / (double)RAND_MAX);
 
     // get first values
     r1 = rand() * rand_range;
+    val1 = zc_array[(int)(r1 + 0.5)];
     r2 = rand() * rand_range;
+    val2 = zc_array[(int)(r2 + 0.5)];
 
-    while(fabs(r2 - r1) < min || fabs(r2 - r1) > max){
-        r2 = rand() * rand_range;        
+    while(abs(val2 - val1) < min || abs(val2 - val1) > max){
+        r1 = rand() * rand_range;
+        val1 = zc_array[(int)(r1 + 0.5)];
+        r2 = rand() * rand_range;
+        val2 = zc_array[(int)(r2 + 0.5)];     
     }
 
     // set first and second and round to nearest integer
-    start = r1 < r2 ? r1 : r2;
-    start += 0.5;
-    end = r2 > r1 ? r2 : r1;
-    end += 0.5;
+    start = (r1 < r2 ? r1 : r2) + 0.5;
+    end = (r2 > r1 ? r2 : r1) + 0.5;
 
     // now put in the values
-    curshard->start = (long)start;
-    curshard->end = (long)end;
+    curshard->start = zc_array[start];
+    curshard->end = zc_array[end];
     curshard->index = curshard->start;
     curshard->looping = 0; // activate the shards with a separate function
 }
