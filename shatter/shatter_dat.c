@@ -80,14 +80,14 @@ float layer_shard_tick(LAYER* layer, SHARD* shard, float* inframe)
     float ampfac = layer->ampfac;
 
     if(layer->play = 1){
-        if(shard->looping = 1 && layer->index > shard->end){
-            layer->index = shard->start;
+        thisframe = inframe[layer->index] * ampfac;
+        layer->index += 1;
+        if(shard->looping = 1){
+            if(layer->index > shard->end) layer->index = shard->start;
         }
         if(layer->index > layer->size){
             layer->index = 0;
         }
-        thisframe = inframe[layer->index] * ampfac;
-        layer->index += 1;
     }
     
     return thisframe;

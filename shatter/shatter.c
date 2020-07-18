@@ -11,7 +11,7 @@
 
 #define NFRAMES (1024) // defines the size of the read/write buffer
 #define DEFAULTMIN (62.0) // the default minimum shard size (62ms)
-                          // the default maximum is the full size of the track
+#define DEFAULTMAX (495.0) // for an override the default maximum is the full size of the track
 
 enum arg_list {ARG_PROGNAME,ARG_INFILE,ARG_LENGTH,ARG_LAYERS,ARG_NARGS};
 
@@ -28,8 +28,8 @@ int main(int argc, char** argv)
     double length_secs;
 
     // variables that handle the read/write buffers
-    float* inframe;
-    float* outframe;
+    float* inframe = NULL;
+    float* outframe = NULL;
     float curframe;
     int nframes = NFRAMES;
     long framesread = 0;
@@ -41,7 +41,7 @@ int main(int argc, char** argv)
     long zc_count = 0; // a counter to track zero crossings for building an array
     long* zero_crossings = NULL; // array to hold the zero crossing locations
     long min; // min and max of the shard size, should be user changable in time
-    long max;
+    long max = DEFAULTMAX;
     int min_override = 0;   // flags to track if the the min/max values are being overridden
     int max_override = 0;
     LAYER** curlayer = NULL;
@@ -78,6 +78,12 @@ int main(int argc, char** argv)
         goto exit;
     }
 
+    if(info.channels > 1){
+        printf("Currently only mono soundfiles are supported.\n");
+        error++;
+        goto exit;
+    }
+
     /**** necessary calculations ****/
     filesize = info.frames;                         // get number of samples in input file
     totalsamples = length_secs * info.samplerate;   // calculate size of output file
@@ -90,12 +96,6 @@ int main(int argc, char** argv)
         max = ((double)max * 0.001) * info.samplerate;
     } else {
         max = filesize;
-    }
-    
-    if(info.channels > 1){
-        printf("Currently only mono soundfiles are supported.\n");
-        error++;
-        goto exit;
     }
 
     // allocate memory for the I/O buffers
@@ -177,7 +177,8 @@ int main(int argc, char** argv)
         for(long i = 0; i < nframes; i++){
             float curframe = 0.0;
             for(int j = 0; j < layers; j++){
-                curframe += layer_tick(curlayer[j],inframe);
+                // curframe += layer_tick(curlayer[j],inframe);
+                curframe += layer_shard_tick(curlayer[j],curshard[j],inframe);
             }
             outframe[i] = curframe;
         }
