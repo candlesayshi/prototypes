@@ -3,7 +3,6 @@ typedef struct shard
     int looping;            // a flag to check whether the shard is currently looping
     unsigned long start;    // the start point of the current shard
     unsigned long end;      // the end point of the current shard
-    unsigned long index;    // current position of the shard
 } SHARD;
 
 typedef struct layer
@@ -20,8 +19,15 @@ void layer_init(LAYER* curlayer, int layers, unsigned long filesize);
 // initialize and set values for new shard
 void new_shard(SHARD* curshard, long* zc_array, long zc_count, long min, long max);
 
+// activate shards
+void activate_shard(SHARD* curshard);
+void activate_all_shards(SHARD** shardarray, int layers);
+
 // get the value from the layer
 float layer_tick(LAYER* layer, float* inframe);
+
+// get the value from the layer/shard
+float layer_shard_tick(LAYER* layer, SHARD* shard, float* inframe);
 
 // layer destruction function
 void destroy_layers(LAYER** thislayer, int layers);

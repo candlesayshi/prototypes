@@ -32,8 +32,8 @@ int main(int argc, char** argv)
     float* outframe;
     float curframe;
     int nframes = NFRAMES;
-    long framesread;
-    long frameswrite;
+    long framesread = 0;
+    long frameswrite = 0;
     long totalsamples;
 
     // variable that handle the layers and shards

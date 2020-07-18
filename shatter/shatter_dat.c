@@ -40,8 +40,20 @@ void new_shard(SHARD* curshard, long* zc_array, long zc_count, long min, long ma
     // now put in the values
     curshard->start = zc_array[start];
     curshard->end = zc_array[end];
-    curshard->index = curshard->start;
     curshard->looping = 0; // activate the shards with a separate function
+}
+
+// set the current shard to start
+void activate_shard(SHARD* curshard)
+{
+    curshard->looping = 1;
+}
+
+// activates all shards at once
+void activate_all_shards(SHARD** shardarray, int layers){
+    for(int i = 0; i < layers; i++){
+        shardarray[i]->looping = 1;
+    }
 }
 
 // get the value from the layer
@@ -56,6 +68,26 @@ float layer_tick(LAYER* layer, float* inframe)
         if(layer->index > layer->size){
             layer->index = 0;
         }
+    }
+    
+    return thisframe;
+}
+
+// get the value from the layer/shard
+float layer_shard_tick(LAYER* layer, SHARD* shard, float* inframe)
+{
+    float thisframe = 0.0;
+    float ampfac = layer->ampfac;
+
+    if(layer->play = 1){
+        if(shard->looping = 1 && layer->index > shard->end){
+            layer->index = shard->start;
+        }
+        if(layer->index > layer->size){
+            layer->index = 0;
+        }
+        thisframe = inframe[layer->index] * ampfac;
+        layer->index += 1;
     }
     
     return thisframe;
