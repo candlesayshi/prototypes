@@ -19,9 +19,11 @@ void layer_init(LAYER* curlayer, int layers, unsigned long filesize);
 // initialize and set values for new shard
 void new_shard(SHARD* curshard, long* zc_array, long zc_count, long min, long max);
 
-// activate shards
+// change the state of shards
 void activate_shard(SHARD* curshard);
 void activate_all_shards(SHARD** shardarray, int layers);
+void deactivate_shard(SHARD* curshard);
+void deactivate_all_shards(SHARD** shardarray, int layers);
 
 // get the value from the layer
 float layer_tick(LAYER* layer, float* inframe);

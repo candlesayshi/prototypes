@@ -56,6 +56,19 @@ void activate_all_shards(SHARD** shardarray, int layers){
     }
 }
 
+// set the current shard to stop
+void deactivate_shard(SHARD* curshard)
+{
+    curshard->looping = 0;
+}
+
+// deactivates all shards at once
+void deactivate_all_shards(SHARD** shardarray, int layers){
+    for(int i = 0; i < layers; i++){
+        shardarray[i]->looping = 0;
+    }
+}
+
 // get the value from the layer
 float layer_tick(LAYER* layer, float* inframe)
 {
@@ -77,19 +90,18 @@ float layer_tick(LAYER* layer, float* inframe)
 float layer_shard_tick(LAYER* layer, SHARD* shard, float* inframe)
 {
     float thisframe = 0.0;
-    float ampfac = layer->ampfac;
 
-    if(layer->play = 1){
-        thisframe = inframe[layer->index] * ampfac;
+    if(layer->play == 1){
+        thisframe = inframe[layer->index] * layer->ampfac;
         layer->index += 1;
-        if(shard->looping = 1){
+        if(shard->looping){
             if(layer->index > shard->end) layer->index = shard->start;
         }
         if(layer->index > layer->size){
             layer->index = 0;
+            if(shard->looping == 0) layer->play = 0;
         }
     }
-    
     return thisframe;
 }
 

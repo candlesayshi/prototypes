@@ -38,12 +38,14 @@ int main(int argc, char** argv)
 
     // variable that handle the layers and shards
     int layers;
+    int stopped_layers = 0;
     long zc_count = 0; // a counter to track zero crossings for building an array
     long* zero_crossings = NULL; // array to hold the zero crossing locations
     long min; // min and max of the shard size, should be user changable in time
     long max = DEFAULTMAX;
     int min_override = 0;   // flags to track if the the min/max values are being overridden
     int max_override = 0;
+    int tail = 1;   // flag that determines if the tail of the layers plays after the shards deactivate
     LAYER** curlayer = NULL;
     SHARD** curshard = NULL;
 
@@ -141,11 +143,12 @@ int main(int argc, char** argv)
         }
     }
 
-    // build the shards
+    // build and prepare the shards
     curshard = (SHARD**)malloc(sizeof(SHARD*) * layers);
     for(int i = 0; i < layers; i++){
         curshard[i] = (SHARD*)malloc(sizeof(SHARD));
         new_shard(curshard[i],zero_crossings,zc_count,min,max);
+        activate_shard(curshard[i]);
     }
 
     // DEBUG to check the values of the shards
@@ -184,6 +187,23 @@ int main(int argc, char** argv)
         }
         frameswrite += sf_write_float(outfile,outframe,nframes);
     }
+
+    if(tail){
+        deactivate_all_shards(curshard,layers);
+        while(stopped_layers < layers){
+            for(long i = 0; i < nframes; i++){
+                float curframe = 0.0;
+                stopped_layers = 0;
+                for(int j = 0; j < layers; j++){
+                    curframe += layer_shard_tick(curlayer[j],curshard[j],inframe);
+                    if(curlayer[j]->play == 0) stopped_layers++;
+                }
+                outframe[i] = curframe;
+            }
+            frameswrite += sf_write_float(outfile,outframe,nframes);
+        }
+    }
+
 
     printf("Done. Output saved to %s\n",filename);
 
