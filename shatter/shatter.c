@@ -40,6 +40,7 @@ int main(int argc, char** argv)
     int layers;
     int stopped_layers = 0;
     long zc_count = 0; // a counter to track zero crossings for building an array
+    int zc_override = 0; // flag to check for overriding the zero crossing check
     long* zero_crossings = NULL; // array to hold the zero crossing locations
     long min; // min and max of the shard size, should be user changable in time
     long max = DEFAULTMAX;
@@ -50,9 +51,39 @@ int main(int argc, char** argv)
     SHARD** curshard = NULL;
 
     printf("SHATTER: shatters an audio file over a number of layers\n");
+
+    // handle options
+    if(argc > 1){
+		char flag;
+		while(argv[1][0] == '-'){
+			flag = argv[1][1];
+			switch(flag){
+			case('\0'):
+				printf("Error: missing flag name\n");
+				return 1;
+            case('z'):
+                zc_override = 1;
+                break;
+            case('t'):
+                tail = 0;
+                break;
+			default:
+				break;
+			}
+			argc--;
+			argv++;
+		}
+	}
+
+    // usage message
     if(argc != ARG_NARGS){
         printf( "Insufficent arguments.\n"
-                "usage: shatter infile length_in_seconds layers\n");
+                "usage: shatter [-options] infile length layers\n"
+                "options:\t-z :\tOverrides the check to split shards at zero\n"
+                "\t\t\tcrossings, allowing them to split anywhere.\n"
+                "\t\t-t :\tStops processing after shards stop, forcing\n"
+                "\t\t\tthe audio to end immediately at length.\n"
+                );
         return 1;
     }
 
@@ -123,10 +154,22 @@ int main(int argc, char** argv)
     /*  I could probably do this at the same time as I copy the audio file into the
         buffer, but I was having problems with the zero_crossings array. So, I'm
         keeping it compartmentalizing it all for now */
-    for(long i = 0; i < filesize; i++){
-        if(inframe[i] == 0.0){
+    if(zc_override){
+        for(long i = 0; i < filesize; i++){
+            /* there's obviously a much more memory efficent way to 
+               do this, but I'm implementing this so far to check the sound.
+               Post-listen: after a few tests the end result doesn't really
+               sound much different if at all. So, I expect for this to be
+               used rarely. Might come back to it. */
             zero_crossings = (long*)realloc(zero_crossings,sizeof(long) * ++zc_count);
             zero_crossings[zc_count-1] = i;
+        }
+    } else {
+        for(long i = 0; i < filesize; i++){
+            if(inframe[i] == 0.0){
+                zero_crossings = (long*)realloc(zero_crossings,sizeof(long) * ++zc_count);
+                zero_crossings[zc_count-1] = i;
+            }
         }
     }
     zero_crossings[zc_count] = filesize; // make last value the end of file
