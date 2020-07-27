@@ -30,7 +30,7 @@ void deactivate_all_shards(SHARD** shardarray, int layers);
 float layer_tick(LAYER* layer, float* inframe);
 
 // get the value from the layer/shard
-float shard_tick(LAYER* layer, SHARD* shard, float* inframe, int change_check, double bias);
+float shard_tick(LAYER* layer, SHARD* shard, float* inframe, int* change_check, double bias);
 
 // see if the shard is going to change (0 = no change, 1 = change)
 int shift_check(SHARD* curshard, double bias);

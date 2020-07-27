@@ -88,7 +88,7 @@ float layer_tick(LAYER* layer, float* inframe)
 }
 
 // get the value from the layer/shard
-float shard_tick(LAYER* layer, SHARD* shard, float* inframe, int change_check, double bias)
+float shard_tick(LAYER* layer, SHARD* shard, float* inframe, int* change_check, double bias)
 {
     float thisframe = 0.0;
 
@@ -97,7 +97,6 @@ float shard_tick(LAYER* layer, SHARD* shard, float* inframe, int change_check, d
         layer->index += 1;
         if(shard->looping){
             if(layer->index > shard->end) layer->index = shard->start;
-            change_check = shift_check(shard, bias); // checks for change
         }
         if(layer->index > layer->size){
             layer->index = 0;
@@ -112,13 +111,15 @@ int shift_check(SHARD* curshard, double bias)
 {
     double inv_randmax = 1.0 / (double)RAND_MAX;
     double check = rand();
+    double val = curshard->shift;
 
     check *= inv_randmax;
 
-    if(check > curshard->shift){
+    if(check > val){
         return 1;
     } else {
-        curshard->shift *= bias;
+        val *= bias;
+        curshard->shift = val;
         return 0;
     }    
 }

@@ -36,8 +36,6 @@ int main(int argc, char** argv)
     long totalsamples;
 
     // variable that handle the layers and shards
-    unsigned int seed; 
-    int manual_seed = 0;            // a flag to check a see if a custom seed is used
     int layers;
     int stopped_layers = 0;
     long zc_count = 0;              // a counter to track zero crossings for building an array
@@ -47,6 +45,7 @@ int main(int argc, char** argv)
     long max = DEFAULTMAX;
     int min_override = 0;           // flags to track if the the min/max values are being overridden
     int max_override = 0;
+    int change_check = 0;
     double bias = 0.75;             // sets the chance for the shards to shift to new configurations
     int tail = 1;                   // flag that determines if the tail of the layers plays after the shards deactivate
     LAYER** curlayer = NULL;
@@ -70,7 +69,7 @@ int main(int argc, char** argv)
                 tail = 0;
                 break;
             case('b'):
-                bias = atof(&argv[1][2]);
+                bias = atof(&(argv[1][2]));
                 if(bias < 0.0 || bias > 1.0){
                     printf("Shift bias cannot be < 0 or > 1.\n");
                     return 1;
@@ -78,7 +77,7 @@ int main(int argc, char** argv)
                 break;
             case('m'):
                 min_override = 1;
-                min = atoi(&argv[1][2]);
+                min = atoi(&(argv[1][2]));
                 if(min < 0 || min > max){
                     printf("Minimum shard size cannot be < 0 or > maximum.\n");
                     return 1;
@@ -86,7 +85,7 @@ int main(int argc, char** argv)
                 break;
             case('x'):
                 max_override = 1;
-                max = atoi(&argv[1][2]);
+                max = atoi(&(argv[1][2]));
                 if(max < 0 || max < min){
                     printf("Maximum shard size cannot be < 0 or > minimum\n");
                     return 1;
@@ -120,12 +119,7 @@ int main(int argc, char** argv)
     }
 
     // seed the randomness
-    if(manual_seed){
-        srand(seed);
-    } else {
-        seed = time(NULL);
-        srand(seed);
-    }
+    srand(time(NULL));
 
     /******* handle the arguments *******/
 
@@ -259,10 +253,14 @@ int main(int argc, char** argv)
         for(long i = 0; i < nframes; i++){
             float curframe = 0.0;
             for(int j = 0; j < layers; j++){
-                // curframe += layer_tick(curlayer[j],inframe); // deactivated test
-                int change_check = 0;
-                curframe += shard_tick(curlayer[j],curshard[j],inframe, change_check, bias);
-                if(change_check == 1) new_shard(curshard[j],zero_crossings,zc_count,min,max);
+                change_check = 0;
+                curframe += shard_tick(curlayer[j],curshard[j],inframe,&change_check,bias);
+                /*
+                if(change_check == 1){
+                    new_shard(curshard[j],zero_crossings,zc_count,min,max);
+                    activate_shard(curshard[j]);
+                }
+                */
             }
             outframe[i] = curframe;
         }
