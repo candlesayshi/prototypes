@@ -96,7 +96,12 @@ float shard_tick(LAYER* layer, SHARD* shard, float* inframe, int* change_check, 
         thisframe = inframe[layer->index] * layer->ampfac;
         layer->index += 1;
         if(shard->looping){
-            if(layer->index > shard->end) layer->index = shard->start;
+            if(layer->index > shard->end){
+                layer->index = shard->start;
+                if(shift_check(shard,bias)){
+                    *change_check = 1;
+                }
+            }
         }
         if(layer->index > layer->size){
             layer->index = 0;

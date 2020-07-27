@@ -255,12 +255,10 @@ int main(int argc, char** argv)
             for(int j = 0; j < layers; j++){
                 change_check = 0;
                 curframe += shard_tick(curlayer[j],curshard[j],inframe,&change_check,bias);
-                /*
                 if(change_check == 1){
                     new_shard(curshard[j],zero_crossings,zc_count,min,max);
                     activate_shard(curshard[j]);
                 }
-                */
             }
             outframe[i] = curframe;
         }
