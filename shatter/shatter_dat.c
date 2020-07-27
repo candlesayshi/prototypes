@@ -41,6 +41,7 @@ void new_shard(SHARD* curshard, long* zc_array, long zc_count, long min, long ma
     curshard->start = zc_array[start];
     curshard->end = zc_array[end];
     curshard->looping = 0; // activate the shards with a separate function
+    curshard->shift = 1.0; // sets the chance of change to its maximum
 }
 
 // set the current shard to start
@@ -87,7 +88,7 @@ float layer_tick(LAYER* layer, float* inframe)
 }
 
 // get the value from the layer/shard
-float layer_shard_tick(LAYER* layer, SHARD* shard, float* inframe)
+float shard_tick(LAYER* layer, SHARD* shard, float* inframe, int change_check, double bias)
 {
     float thisframe = 0.0;
 
@@ -96,6 +97,7 @@ float layer_shard_tick(LAYER* layer, SHARD* shard, float* inframe)
         layer->index += 1;
         if(shard->looping){
             if(layer->index > shard->end) layer->index = shard->start;
+            change_check = shift_check(shard, bias); // checks for change
         }
         if(layer->index > layer->size){
             layer->index = 0;
@@ -105,8 +107,25 @@ float layer_shard_tick(LAYER* layer, SHARD* shard, float* inframe)
     return thisframe;
 }
 
+// see if the shard is going to change (0 = no change, 1 = change)
+int shift_check(SHARD* curshard, double bias)
+{
+    double inv_randmax = 1.0 / (double)RAND_MAX;
+    double check = rand();
+
+    check *= inv_randmax;
+
+    if(check > curshard->shift){
+        return 1;
+    } else {
+        curshard->shift *= bias;
+        return 0;
+    }    
+}
+
 // layer destruction function
-void destroy_layers(LAYER** thislayer, int layers){
+void destroy_layers(LAYER** thislayer, int layers)
+{
     for(int i = 0; i > layers; i++){
         free(thislayer[i]);
     }
@@ -114,7 +133,8 @@ void destroy_layers(LAYER** thislayer, int layers){
 }
 
 // shard destruction function
-void destroy_shards(SHARD** thisshard, int layers){
+void destroy_shards(SHARD** thisshard, int layers)
+{
     for(int i = 0; i > layers; i++){
         free(thisshard[i]);
     }

@@ -3,6 +3,7 @@ typedef struct shard
     int looping;            // a flag to check whether the shard is currently looping
     unsigned long start;    // the start point of the current shard
     unsigned long end;      // the end point of the current shard
+    double shift;           // the chance (x:1) that the shard won't change for the next loop
 } SHARD;
 
 typedef struct layer
@@ -29,7 +30,10 @@ void deactivate_all_shards(SHARD** shardarray, int layers);
 float layer_tick(LAYER* layer, float* inframe);
 
 // get the value from the layer/shard
-float layer_shard_tick(LAYER* layer, SHARD* shard, float* inframe);
+float shard_tick(LAYER* layer, SHARD* shard, float* inframe, int change_check, double bias);
+
+// see if the shard is going to change (0 = no change, 1 = change)
+int shift_check(SHARD* curshard, double bias);
 
 // layer destruction function
 void destroy_layers(LAYER** thislayer, int layers);

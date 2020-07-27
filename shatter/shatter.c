@@ -42,10 +42,11 @@ int main(int argc, char** argv)
     long zc_count = 0; // a counter to track zero crossings for building an array
     int zc_override = 0; // flag to check for overriding the zero crossing check
     long* zero_crossings = NULL; // array to hold the zero crossing locations
-    long min; // min and max of the shard size, should be user changable in time
+    long min = DEFAULTMIN; // min and max of the shard size, should be user changable in time
     long max = DEFAULTMAX;
     int min_override = 0;   // flags to track if the the min/max values are being overridden
     int max_override = 0;
+    double bias = 0.75; // sets the chance for the shards to shift to new configurations
     int tail = 1;   // flag that determines if the tail of the layers plays after the shards deactivate
     LAYER** curlayer = NULL;
     SHARD** curshard = NULL;
@@ -241,8 +242,10 @@ int main(int argc, char** argv)
         for(long i = 0; i < nframes; i++){
             float curframe = 0.0;
             for(int j = 0; j < layers; j++){
-                // curframe += layer_tick(curlayer[j],inframe);
-                curframe += layer_shard_tick(curlayer[j],curshard[j],inframe);
+                // curframe += layer_tick(curlayer[j],inframe); // deactivated test
+                int change_check = 0;
+                curframe += shard_tick(curlayer[j],curshard[j],inframe, change_check, bias);
+                if(change_check == 1) new_shard(curshard[j],zero_crossings,zc_count,min,max);
             }
             outframe[i] = curframe;
         }
@@ -256,7 +259,7 @@ int main(int argc, char** argv)
                 float curframe = 0.0;
                 stopped_layers = 0;
                 for(int j = 0; j < layers; j++){
-                    curframe += layer_shard_tick(curlayer[j],curshard[j],inframe);
+                    curframe += shard_tick(curlayer[j],curshard[j],inframe,0,1);
                     if(curlayer[j]->play == 0) stopped_layers++;
                 }
                 outframe[i] = curframe;
