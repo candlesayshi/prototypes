@@ -68,6 +68,13 @@ int main(int argc, char** argv)
             case('t'):
                 tail = 0;
                 break;
+            case('b'):
+                bias = atof(&argv[1][2]);
+                if(bias < 0.0 || bias > 1.0){
+                    printf("Shift bias cannot be < 0 or > 1.\n");
+                    return 1;
+                }
+                break;
             case('m'):
                 min_override = 1;
                 min = atoi(&argv[1][2]);
@@ -75,6 +82,7 @@ int main(int argc, char** argv)
                     printf("Minimum shard size cannot be < 0 or > maximum.\n");
                     return 1;
                 }
+                break;
             case('x'):
                 max_override = 1;
                 max = atoi(&argv[1][2]);
@@ -82,6 +90,7 @@ int main(int argc, char** argv)
                     printf("Maximum shard size cannot be < 0 or > minimum\n");
                     return 1;
                 }
+                break;
 			default:
 				break;
 			}
@@ -98,6 +107,9 @@ int main(int argc, char** argv)
                 "\t\t\tcrossings, allowing them to split anywhere.\n"
                 "\t\t-t :\tStops processing after shards stop, forcing\n"
                 "\t\t\tthe audio to end immediately at length.\n"
+                "\t\t-b :\tSets the bias at which the shards become more\n"
+                "\t\t\tlikely to change with each play (0.0 < bias < 1.0)\n"
+                "\t\t\t(1.0 = never changes)\n"
                 "\t\t-m :\tSets the minimum size of the shard(s) (in microseconds)\n"
                 "\t\t\t(default minimum: 62 ms)\n"
                 "\t\t-x :\tSets the maximum size of the shard(s) (in microseconds)\n"
