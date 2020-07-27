@@ -9,11 +9,11 @@
 #include <time.h>
 #include "shatter_dat.h"
 
-#define NFRAMES (1024) // defines the size of the read/write buffer
-#define DEFAULTMIN (62.0) // the default minimum shard size (62ms)
-#define DEFAULTMAX (495.0) // for an override the default maximum is the full size of the track
+#define NFRAMES (1024)      // defines the size of the read/write buffer
+#define DEFAULTMIN (62.0)   // the default minimum shard size (62ms)
+#define DEFAULTMAX (495.0)  // for an override the default maximum is the full size of the track
 
-enum arg_list {ARG_PROGNAME,ARG_INFILE,ARG_LENGTH,ARG_LAYERS,ARG_NARGS};
+enum arg_list {ARG_PROGNAME,ARG_INFILE,ARG_OUTFILE,ARG_LENGTH,ARG_LAYERS,ARG_NARGS};
 
 int main(int argc, char** argv)
 {
@@ -22,7 +22,6 @@ int main(int argc, char** argv)
     // variables that handle the files
     SNDFILE* infile = NULL;
     SNDFILE* outfile = NULL;
-    char filename[] = {"shattered-output.wav"};
     SF_INFO info;
     unsigned long filesize;
     double length_secs;
@@ -37,17 +36,19 @@ int main(int argc, char** argv)
     long totalsamples;
 
     // variable that handle the layers and shards
+    unsigned int seed; 
+    int manual_seed = 0;            // a flag to check a see if a custom seed is used
     int layers;
     int stopped_layers = 0;
-    long zc_count = 0; // a counter to track zero crossings for building an array
-    int zc_override = 0; // flag to check for overriding the zero crossing check
-    long* zero_crossings = NULL; // array to hold the zero crossing locations
-    long min = DEFAULTMIN; // min and max of the shard size, should be user changable in time
+    long zc_count = 0;              // a counter to track zero crossings for building an array
+    int zc_override = 0;            // flag to check for overriding the zero crossing check
+    long* zero_crossings = NULL;    // array to hold the zero crossing locations
+    long min = DEFAULTMIN;          // min and max of the shard size, should be user changable in time
     long max = DEFAULTMAX;
-    int min_override = 0;   // flags to track if the the min/max values are being overridden
+    int min_override = 0;           // flags to track if the the min/max values are being overridden
     int max_override = 0;
-    double bias = 0.75; // sets the chance for the shards to shift to new configurations
-    int tail = 1;   // flag that determines if the tail of the layers plays after the shards deactivate
+    double bias = 0.75;             // sets the chance for the shards to shift to new configurations
+    int tail = 1;                   // flag that determines if the tail of the layers plays after the shards deactivate
     LAYER** curlayer = NULL;
     SHARD** curshard = NULL;
 
@@ -102,14 +103,14 @@ int main(int argc, char** argv)
     // usage message
     if(argc != ARG_NARGS){
         printf( "Insufficent arguments.\n"
-                "usage: shatter [-options] infile length layers\n"
+                "usage: shatter [-options] infile outfile length layers\n"
                 "options:\t-z :\tOverrides the check to split shards at zero\n"
                 "\t\t\tcrossings, allowing them to split anywhere.\n"
                 "\t\t-t :\tStops processing after shards stop, forcing\n"
                 "\t\t\tthe audio to end immediately at length.\n"
                 "\t\t-b :\tSets the bias at which the shards become more\n"
                 "\t\t\tlikely to change with each play (0.0 < bias < 1.0)\n"
-                "\t\t\t(1.0 = never changes)\n"
+                "\t\t\t(default bias: 0.75, 1.0 = never changes)\n"
                 "\t\t-m :\tSets the minimum size of the shard(s) (in microseconds)\n"
                 "\t\t\t(default minimum: 62 ms)\n"
                 "\t\t-x :\tSets the maximum size of the shard(s) (in microseconds)\n"
@@ -119,7 +120,12 @@ int main(int argc, char** argv)
     }
 
     // seed the randomness
-    srand(time(NULL));
+    if(manual_seed){
+        srand(seed);
+    } else {
+        seed = time(NULL);
+        srand(seed);
+    }
 
     /******* handle the arguments *******/
 
@@ -170,7 +176,8 @@ int main(int argc, char** argv)
         goto exit;
     }
 
-    // fill the input buffer (find zero crossings later in this loop)
+    // fill the input buffer (find zero crossings later in this loop, maybe?)
+    printf("Copying file to input... ");
     for(long i = 0; i < filesize; i++){
         framesread = sf_read_float(infile,&curframe,1);
         if(framesread != 1){
@@ -179,7 +186,9 @@ int main(int argc, char** argv)
             goto exit;
         }
         inframe[i] = curframe;
+        printf("\rCopying file to input... %.0f%% done.",((double)i / (double)filesize) * 100.0);
     }
+    printf("\rCopying file to input... 100%% done.\n");
 
     // find zero crossings and build zero crossings array
     /*  I could probably do this at the same time as I copy the audio file into the
@@ -196,15 +205,19 @@ int main(int argc, char** argv)
             zero_crossings[zc_count-1] = i;
         }
     } else {
+        printf("Scanning for zero crossings... ");
         for(long i = 0; i < filesize; i++){
             if(inframe[i] == 0.0){
                 zero_crossings = (long*)realloc(zero_crossings,sizeof(long) * ++zc_count);
                 zero_crossings[zc_count-1] = i;
             }
+            printf("\rScanning for zero crossings... %ld found.",zc_count);
         }
+        printf("\rScanning for zero crossings... %ld found.\n",zc_count);
     }
     zero_crossings[zc_count] = filesize; // make last value the end of file
 
+    printf("Shattering input... ");
     // build the layers
     curlayer = (LAYER**)malloc(sizeof(LAYER*) * layers);
     for(int i = 0; i < layers; i++){
@@ -224,15 +237,7 @@ int main(int argc, char** argv)
         new_shard(curshard[i],zero_crossings,zc_count,min,max);
         activate_shard(curshard[i]);
     }
-
-    // DEBUG to check the values of the shards
-    /*
-    for(int i = 0; i < layers; i++){
-        printf("SHARD %d:\n"
-                "\tstart sample =\t%ld\n"
-                "\tend sample =\t%ld\n",i,curshard[i]->start,curshard[i]->end);
-    }
-    */
+    printf("Done.\n");
 
     /**** get the output ready ****/
     outframe = (float*)malloc(sizeof(float) * nframes * info.channels);
@@ -242,9 +247,9 @@ int main(int argc, char** argv)
         goto exit;
     }
     // if that's all okay, create the output file
-    outfile = sf_open(filename,SFM_WRITE,&info);
+    outfile = sf_open(argv[ARG_OUTFILE],SFM_WRITE,&info);
     if(outfile == NULL){
-        printf("Error creating file: %s\n",filename);
+        printf("Error creating file: %s\n",argv[ARG_OUTFILE]);
         error++;
         goto exit;
     }
@@ -261,9 +266,10 @@ int main(int argc, char** argv)
             }
             outframe[i] = curframe;
         }
+        printf("\rWriting output... %.0f%% done.",((double)frameswrite / (double)totalsamples) * 100.0);
         frameswrite += sf_write_float(outfile,outframe,nframes);
     }
-
+    printf("\nCleaning shards... ");
     if(tail){
         deactivate_all_shards(curshard,layers);
         while(stopped_layers < layers){
@@ -281,7 +287,7 @@ int main(int argc, char** argv)
     }
 
 
-    printf("Done. Output saved to %s\n",filename);
+    printf("Done.\nOutput saved to %s\n",argv[ARG_OUTFILE]);
 
 exit:
     if(error){
