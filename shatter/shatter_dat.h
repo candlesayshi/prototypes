@@ -11,6 +11,7 @@ typedef struct layer
     int play;               // a flag to determine if the layer is active
     unsigned long size;     // the number of frames in the audio file
     double ampfac;          // amplitude of the layer - usually 1.0/(number of layers)
+    double sqrfac;          // amplitude of the layer - replaces ampfac when the shard plays
     unsigned long index;    // position in the audio file
 } LAYER;
 

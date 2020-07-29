@@ -9,6 +9,7 @@ void layer_init(LAYER* curlayer, int layers, unsigned long filesize)
 {
     curlayer->play = 1;
     curlayer->ampfac = (1.0 / (double)layers);
+    curlayer->sqrfac = (1.0 / sqrt((double)layers));
     curlayer->size = filesize;
     curlayer->index = 0;
 }
@@ -98,6 +99,7 @@ float shard_tick(LAYER* layer, SHARD* shard, float* inframe, int* change_check, 
         if(shard->looping){
             if(layer->index > shard->end){
                 layer->index = shard->start;
+                layer->ampfac = layer->sqrfac;
                 if(shift_check(shard,bias)){
                     *change_check = 1;
                 }
