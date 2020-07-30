@@ -202,7 +202,7 @@ int main(int argc, char** argv)
         printf("Scanning for zero crossings... ");
         for(long i = 0; i < filesize; i++){
             if(inframe[i] == 0.0){
-                zero_crossings = (long*)realloc(zero_crossings,sizeof(long) * ++zc_count);
+                zero_crossings = (long*)realloc(zero_crossings,sizeof(long) * (++zc_count + 1)); // with guard point
                 zero_crossings[zc_count-1] = i;
             }
             printf("\rScanning for zero crossings... %ld found.",zc_count);
