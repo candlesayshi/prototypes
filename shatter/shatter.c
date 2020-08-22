@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <sndfile.h>
 #include <time.h>
+#include <math.h>
 #include "shatter_dat.h"
 
 #define NFRAMES (1024)      // defines the size of the read/write buffer
@@ -40,6 +41,8 @@ int main(int argc, char** argv)
     int stopped_layers = 0;
     long zc_count = 0;              // a counter to track zero crossings for building an array
     int zc_override = 0;            // flag to check for overriding the zero crossing check
+    int near_zero_mode = 0;         // flag to change the zero crossing to a quietness detector
+    double near_zero = 0.0;         // the value for what set the shards
     long* zero_crossings = NULL;    // array to hold the zero crossing locations
     long min = DEFAULTMIN;          // min and max of the shard size, should be user changable in time
     long max = DEFAULTMAX;
@@ -67,6 +70,10 @@ int main(int argc, char** argv)
                 break;
             case('t'):
                 tail = 0;
+                break;
+            case('n'):
+                near_zero_mode = 1;
+                near_zero = atof(&(argv[1][2]));
                 break;
             case('b'):
                 bias = atof(&(argv[1][2]));
@@ -105,6 +112,8 @@ int main(int argc, char** argv)
                 "usage: shatter [-options] infile outfile length layers\n"
                 "options:\t-z :\tOverrides the check to split shards at zero\n"
                 "\t\t\tcrossings, allowing them to split anywhere.\n"
+                "\t\t-n :\tChanges the zero crossing check to an amplitude check\n"
+                "\t\t\tto widen the range of detection with less artifacting\n"
                 "\t\t-t :\tStops processing after shards stop, forcing\n"
                 "\t\t\tthe audio to end immediately at length.\n"
                 "\t\t-b :\tSets the bias at which the shards become more\n"
@@ -198,6 +207,17 @@ int main(int argc, char** argv)
             zero_crossings = (long*)realloc(zero_crossings,sizeof(long) * ++zc_count);
             zero_crossings[zc_count-1] = i;
         }
+    } else if (near_zero_mode){
+        printf("Scanning for near zero points... ");
+        for(long i = 0; i < filesize; i++){
+            double current_value = fabs(inframe[i]);
+            if(current_value <= near_zero){
+                zero_crossings = (long*)realloc(zero_crossings,sizeof(long) * (++zc_count + 1)); // with guard point
+                zero_crossings[zc_count-1] = i;
+            }
+            printf("\rScanning for near zero points... %ld found.",zc_count);
+        }
+        printf("\rScanning for near zero points... %ld found.\n",zc_count);
     } else {
         printf("Scanning for zero crossings... ");
         for(long i = 0; i < filesize; i++){
