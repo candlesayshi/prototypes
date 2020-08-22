@@ -74,6 +74,10 @@ int main(int argc, char** argv)
             case('n'):
                 near_zero_mode = 1;
                 near_zero = atof(&(argv[1][2]));
+                if(near_zero < 0.0 || near_zero > 1.0){
+                    printf("Near zero threshold out of range! Must be between 0.0 and 1.0.\n");
+                    return 1;
+                }
                 break;
             case('b'):
                 bias = atof(&(argv[1][2]));
@@ -112,8 +116,8 @@ int main(int argc, char** argv)
                 "usage: shatter [-options] infile outfile length layers\n"
                 "options:\t-z :\tOverrides the check to split shards at zero\n"
                 "\t\t\tcrossings, allowing them to split anywhere.\n"
-                "\t\t-n :\tChanges the zero crossing check to an amplitude check\n"
-                "\t\t\tto widen the range of detection with less artifacting (ex. -n0.01)\n"
+                "\t\t-n :\tChanges the zero crossing check to use an amplitude\n"
+                "\t\t\tthreshold for determining where shards split (ex. -n0.01)\n"
                 "\t\t-t :\tStops processing after shards stop, forcing\n"
                 "\t\t\tthe audio to end immediately at length.\n"
                 "\t\t-b :\tSets the bias at which the shards become more\n"
