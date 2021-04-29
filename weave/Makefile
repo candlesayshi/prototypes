@@ -8,8 +8,8 @@ CC = gcc
 
 all: $(PROGS)
 
-weave: weave.c
-	$(CC) -o weave weave.c $(INCLUDES) $(LIBS)
+weave: weave.c weave_dat.c
+	$(CC) -o weave weave.c weave_dat.c $(INCLUDES) $(LIBS)
 
 clean:
 	rm -f $(PROGS)

@@ -7,8 +7,12 @@
 #include <stdlib.h>
 #include <sndfile.h>
 #include <math.h>
+#include "weave_dat.h"
 
 #define NFRAMES (1024)      // defines the size of the read/write buffer
+
+#define WETGAIN (0.5)       // some defaults for testing
+#define DTIME (0.25)
 
 enum arg_list {ARG_PROGNAME,ARG_INFILE,ARG_OUTFILE,ARG_NARGS};
 
@@ -30,7 +34,11 @@ int main(int argc, char** argv)
     int nframes = NFRAMES;
     long framesread = 0;
     long frameswrite = 0;
-    long totalsamples;
+
+    // for the delay processor
+    BLOCK* delay = NULL;
+    double wet_gain = WETGAIN;
+    double delay_time = DTIME;
 
     printf("WEAVE: four-device delay with feedback crosstalk\n");
 
@@ -68,12 +76,8 @@ int main(int argc, char** argv)
         goto exit;
     }
 
-    /**** necessary calculations ****/
-    filesize = info.frames;                         // get number of samples in input file
-    totalsamples = length_secs * info.samplerate;   // calculate size of output file
-
     // allocate memory for the I/O buffers
-    inframe = (float*)malloc(sizeof(float) * filesize);
+    inframe = (float*)malloc(sizeof(float) * nframes * info.channels);
     if(inframe == NULL){
         printf("Error allocating memory for input.\n");
         error++;
@@ -93,12 +97,21 @@ int main(int argc, char** argv)
         goto exit;
     }
 
+    // set up the delay
+    delay = new_block(delay_time, info.samplerate);
+
     /**** processing loop that writes to the output ****/
 
     while ((framesread = sf_read_float(infile,inframe,nframes)) > 0){
 	
 		for(long i = 0; i < framesread;i++){
-            outframe[i] = inframe[i];
+            float input = inframe[i];
+            float wet = delay_tick(delay,input);
+
+            wet *= wet_gain;
+            input *= 0.5; // DO NOT FORGET TO TAKE THIS OUT
+
+            outframe[i] = input + wet;
         }
 		if(sf_write_float(outfile,outframe,framesread) != framesread){
 			printf("Error writing to outfile\n");
@@ -125,6 +138,12 @@ exit:
     }
     if(inframe)  free(inframe);
     if(outframe) free(outframe);
+
+    // free delays
+    if(delay->buffer)
+        free(delay->buffer);
+    if(delay)
+        free(delay);
 
     return 0;
 }
