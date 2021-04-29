@@ -11,4 +11,4 @@ typedef struct delay_block
 BLOCK* new_block(float seconds, int srate);
 
 // the main delay processor
-float delay_tick(BLOCK* block, float input);
+float delay_tick(BLOCK* block, float input, double fblevel);

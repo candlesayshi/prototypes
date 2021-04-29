@@ -13,6 +13,7 @@
 
 #define WETGAIN (0.5)       // some defaults for testing
 #define DTIME (0.25)
+#define FEEDBACK (0.5)
 
 enum arg_list {ARG_PROGNAME,ARG_INFILE,ARG_OUTFILE,ARG_NARGS};
 
@@ -37,8 +38,10 @@ int main(int argc, char** argv)
 
     // for the delay processor
     BLOCK* delay = NULL;
-    double wet_gain = WETGAIN;
+    double wet_mix = WETGAIN;
+    double input_mix = 1.0 - wet_mix;
     double delay_time = DTIME;
+    double fblevel = FEEDBACK;
 
     printf("WEAVE: four-device delay with feedback crosstalk\n");
 
@@ -106,10 +109,10 @@ int main(int argc, char** argv)
 	
 		for(long i = 0; i < framesread;i++){
             float input = inframe[i];
-            float wet = delay_tick(delay,input);
+            float wet = delay_tick(delay,input,fblevel);
 
-            wet *= wet_gain;
-            input *= 0.5; // DO NOT FORGET TO TAKE THIS OUT
+            wet *= wet_mix;
+            input *= input_mix;
 
             outframe[i] = input + wet;
         }

@@ -18,7 +18,7 @@ BLOCK* new_block(float seconds, int srate)
 }
 
 // the main delay processor
-float delay_tick(BLOCK* block, float input)
+float delay_tick(BLOCK* block, float input, double fblevel)
 {
     unsigned long readpos;
     float output;
@@ -30,7 +30,7 @@ float delay_tick(BLOCK* block, float input)
         readpos -= block->dtime;
     output = buf[readpos];
 
-    buf[block->writepos++] = input;
+    buf[block->writepos++] = input + (fblevel * output);
     if(block->writepos == block->dtime)
         block->writepos = 0;
 

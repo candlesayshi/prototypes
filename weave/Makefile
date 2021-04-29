@@ -13,4 +13,5 @@ weave: weave.c weave_dat.c
 
 clean:
 	rm -f $(PROGS)
+	rm -f *.wav
 	rm -f *.o
