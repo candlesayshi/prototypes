@@ -38,6 +38,7 @@ int main(int argc, char** argv)
 
     // for the delay processor
     BLOCK* delay = NULL;
+    BLOCK* delay2 = NULL;
     double wet_mix = WETGAIN;
     double input_mix = 1.0 - wet_mix;
     double delay_time = DTIME;
@@ -101,20 +102,33 @@ int main(int argc, char** argv)
     }
 
     // set up the delay
-    delay = new_block(delay_time, info.samplerate);
+    delay = new_block(delay_time, info.samplerate, 1.0);
+    delay2 = new_block(0.3,info.samplerate,1.0);
 
     /**** processing loop that writes to the output ****/
 
     while ((framesread = sf_read_float(infile,inframe,nframes)) > 0){
 	
 		for(long i = 0; i < framesread;i++){
+            // this is where all the processing actually happens
+            //
+            //
             float input = inframe[i];
-            float wet = delay_tick(delay,input,fblevel);
 
+            float wet = delay_tick(delay,input,0.8);
+            
             wet *= wet_mix;
+
+            float wet2 = delay_tick(delay2,(input + wet),fblevel);
+
+            wet2 *= 0.5;
+
             input *= input_mix;
 
-            outframe[i] = input + wet;
+            outframe[i] = input + wet + wet2;
+            //
+            //
+            //
         }
 		if(sf_write_float(outfile,outframe,framesread) != framesread){
 			printf("Error writing to outfile\n");
@@ -147,6 +161,10 @@ exit:
         free(delay->buffer);
     if(delay)
         free(delay);
+    if(delay2->buffer)
+        free(delay2->buffer);
+    if(delay2)
+        free(delay2);
 
     return 0;
 }
