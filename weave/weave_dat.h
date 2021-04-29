@@ -39,3 +39,6 @@ void delay_write(BLOCK* block, double fblevel);
 
 // create a new weave network
 WEAVE* new_weave(int blocks, int srate, double* dtimes, double* igains, double** fblevels);
+
+// destroy everything
+void unravel(WEAVE* weave);

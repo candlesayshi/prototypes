@@ -132,7 +132,7 @@ void unravel(WEAVE* weave)
         int eraser = weave->blocks - 1;
         for(int i = eraser; i >= 0; i--){
             // the delays have their own destructor soooo....
-            destroy_block(delay[i]);
+            destroy_block(weave->delay[i]);
 
             /* I only made one malloc call for all the feedback levels
                 so, we'll see if I actually need this
