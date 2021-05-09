@@ -11,10 +11,6 @@
 
 #define NFRAMES (1024)      // defines the size of the read/write buffer
 
-#define WETGAIN (0.5)       // some defaults for testing
-#define DTIME (0.25)
-#define FEEDBACK (0.5)
-
 enum arg_list {ARG_PROGNAME,ARG_INFILE,ARG_OUTFILE,ARG_NARGS};
 
 int main(int argc, char** argv)
@@ -36,15 +32,7 @@ int main(int argc, char** argv)
     long framesread = 0;
     long frameswrite = 0;
 
-    // for the delay processor
-    BLOCK* delay = NULL;
-    BLOCK* delay2 = NULL;
-    double wet_mix = WETGAIN;
-    double input_mix = 1.0 - wet_mix;
-    double delay_time = DTIME;
-    double fblevel = FEEDBACK;
-
-    printf("WEAVE: four-device delay with feedback crosstalk\n");
+    printf("WEAVE (prototype-version): delay network with feedback\n");
 
     // handle options
     if(argc > 1){
@@ -101,11 +89,11 @@ int main(int argc, char** argv)
         goto exit;
     }
 
-    // set up the delay
-    delay = new_block(delay_time, info.samplerate, 1.0);
-    delay2 = new_block(0.3,info.samplerate,1.0);
+    /*************** initialize effects here *****************/
 
-    /**** processing loop that writes to the output ****/
+    BLOCK* delay = new_block(0.25, info.samplerate);
+
+    /**************** processing loop that writes to the output ********************/
 
     while ((framesread = sf_read_float(infile,inframe,nframes)) > 0){
 	
@@ -114,18 +102,10 @@ int main(int argc, char** argv)
             //
             //
             float input = inframe[i];
+            float dry = input * 0.5;
+            float wet = delay_tick(delay,input,0.45) * 0.5;
 
-            float wet = delay_tick(delay,input,0.8);
-            
-            wet *= wet_mix;
-
-            float wet2 = delay_tick(delay2,(input + wet),fblevel);
-
-            wet2 *= 0.5;
-
-            input *= input_mix;
-
-            outframe[i] = input + wet + wet2;
+            outframe[i] = dry + wet;
             //
             //
             //
@@ -155,16 +135,7 @@ exit:
     }
     if(inframe)  free(inframe);
     if(outframe) free(outframe);
-
-    // free delays
-    if(delay->buffer)
-        free(delay->buffer);
-    if(delay)
-        free(delay);
-    if(delay2->buffer)
-        free(delay2->buffer);
-    if(delay2)
-        free(delay2);
+    destroy_block(delay);
 
     return 0;
 }
