@@ -1,6 +1,6 @@
 INCLUDES	= -I/usr/include
 LIBS		= -L/lib -lsndfile -lm
-PROGS = shatter
+PROGS = weave
 
 # make sure to check that libsndfile is installed correctly
 
@@ -8,9 +8,10 @@ CC = gcc
 
 all: $(PROGS)
 
-shatter: shatter.c shatter_dat.c
-	$(CC) -o shatter shatter.c shatter_dat.c $(INCLUDES) $(LIBS)
+weave: weave.c weave_dat.c
+	$(CC) -o weave weave.c weave_dat.c $(INCLUDES) $(LIBS)
 
 clean:
 	rm -f $(PROGS)
+	rm -f *.wav
 	rm -f *.o
