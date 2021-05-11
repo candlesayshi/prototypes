@@ -7,14 +7,28 @@ typedef struct delay_block
     long writepos;              // the position of record head
     float* buffer;              // buffer to store the delay
 
+    double input;               // trying this to build mixes within the delay block
+    double output;
 } BLOCK;
 
 typedef struct delay_network
 {
-    int blocks;                 // the number of delay blocks
-    BLOCK** delay;              // building the delay blocks as an array
-    double** feedback_level;    // the feedback levels as a two-dimensional array (x = delay index, y = fb input index)
-    float* fb_mixes;            // the feedback mixes to send to each block
+    BLOCK* delayA;              // building the delay blocks
+    BLOCK* delayB;
+
+    double wetdrymix;
+
+    // parameters for delay block A
+    double inputgainA;
+    double feedbackfromAtoA;
+    double feedbackfromBtoA;
+    double delaytimeA;
+
+    // parameters for delay block B
+    double inputgainB;
+    double feedbackfromAtoB;
+    double feedbackfromBtoB;
+    double delaytimeB;
 
 } WEAVE;
 
@@ -27,3 +41,12 @@ void destroy_block(BLOCK* block);
 
 // the main delay processor
 float delay_tick(BLOCK* block, float input, double fblevel);
+
+// allocate a new weave
+WEAVE* new_weave(double dtimeA, double dtimeB, int srate);
+
+// weave destructor
+void unravel(WEAVE* weave);
+
+// the main effect process
+float weave_tick(WEAVE* weave, float input);
