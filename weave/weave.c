@@ -93,6 +93,7 @@ int main(int argc, char** argv)
 
     BLOCK* delay = new_block(0.25, info.samplerate);
     WEAVE* weave = new_weave(0.25, 0.4, info.samplerate);
+    weave_default(weave,info.samplerate);
 
     /**************** processing loop that writes to the output ********************/
 

@@ -45,8 +45,17 @@ float delay_tick(BLOCK* block, float input, double fblevel);
 // allocate a new weave
 WEAVE* new_weave(double dtimeA, double dtimeB, int srate);
 
+// read the delay block signal
+float block_read(BLOCK* block);
+
+// write into the delay
+void block_write(BLOCK* block, float input);
+
 // weave destructor
 void unravel(WEAVE* weave);
 
 // the main effect process
 float weave_tick(WEAVE* weave, float input);
+
+// push a default patch to the weave
+void weave_default(WEAVE* weave, int srate);

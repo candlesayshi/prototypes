@@ -104,36 +104,87 @@ void unravel(WEAVE* weave)
     }
 }
 
+// read the delay block signal
+float block_read(BLOCK* block)
+{
+    unsigned long readpos;
+    float* buf = block->buffer;
+
+    readpos = block->writepos + block->dtime;
+    if(readpos >= block->dtime)
+        readpos -= block->dtime;
+    block->output = buf[readpos];
+
+    return block->output;
+}
+
+// write into the delay
+void block_write(BLOCK* block, float input)
+{
+    float* buf = block->buffer;
+
+    buf[block->writepos++] = input;
+    if(block->writepos == block->dtime)
+        block->writepos = 0;
+}
+
+// the main effect process
 float weave_tick(WEAVE* weave, float input)
 {
     float output;
+    float outA, outB;
+    float inA, inB;
 
     unsigned long readposA, readposB;
     float* bufA = weave->delayA->buffer;
     float* bufB = weave->delayB->buffer;
 
     // get read position from delaytime
-    readposA = weave->delayA->writepos + weave->delayA->dtime;
-    if(readposA >= weave->delayA->dtime)
-        readposA -= weave->delayA->dtime;
-    weave->delayA->output = bufA[readposA];
+    outA = block_read(weave->delayA);
+    outB = block_read(weave->delayB);
 
-    readposB = weave->delayB->writepos + weave->delayB->dtime;
-    if(readposB >= weave->delayB->dtime)
-        readposB -= weave->delayB->dtime;
-    weave->delayB->output = bufB[readposB];
+    inA = (input * weave->inputgainA) + (outA * weave->feedbackfromAtoA)
+          + (outB * weave->feedbackfromBtoA);
+    inB = (input * weave->inputgainB) + (outA * weave->feedbackfromAtoB)
+          + (outB * weave->feedbackfromBtoB);
 
     // write the delayed signal
-    bufA[weave->delayA->writepos++] = (input);
-    if(weave->delayA->writepos == weave->delayA->dtime)
-        weave->delayA->writepos = 0;
+    block_write(weave->delayA,inA);
+    block_write(weave->delayB,inB);
 
-    bufB[weave->delayB->writepos++] = (input);
-    if(weave->delayB->writepos == weave->delayB->dtime)
-        weave->delayB->writepos = 0;
-
-    output = weave->delayA->output + weave->delayB->output;
+    output = outA + outB;
 
     return output;
+
+}
+
+// push a default patch to the weave (sample rate needed because this resets blocks)
+void weave_default(WEAVE* weave, int srate)
+{
+    weave->wetdrymix = 0.5;
+
+    // parameters for delay block A
+    weave->inputgainA = 1.0;
+    weave->feedbackfromAtoA = 0.4;
+    weave->feedbackfromBtoA = 0.3;
+    weave->delaytimeA = 0.45;
+
+    // parameters for delay block B
+    weave->inputgainB = 0.3;
+    weave->feedbackfromAtoB = 0.3;
+    weave->feedbackfromBtoB = 0.6;
+    weave->delaytimeB = 0.15;
+
+    destroy_block(weave->delayA);
+    destroy_block(weave->delayB);
+
+    BLOCK* blockA = (BLOCK*)malloc(sizeof(BLOCK));
+    BLOCK* blockB = (BLOCK*)malloc(sizeof(BLOCK));
+
+    blockA = new_block(weave->delaytimeA,srate);
+    blockB = new_block(weave->delaytimeB,srate);
+
+    weave->delayA = blockA;
+    weave->delayB = blockB;
 
 }
