@@ -132,6 +132,8 @@ float weave_tick(WEAVE* weave, float input)
     if(weave->delayB->writepos == weave->delayB->dtime)
         weave->delayB->writepos = 0;
 
+    output = weave->delayA->output + weave->delayB->output;
+
     return output;
 
 }

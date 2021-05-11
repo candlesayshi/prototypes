@@ -92,6 +92,7 @@ int main(int argc, char** argv)
     /*************** initialize effects here *****************/
 
     BLOCK* delay = new_block(0.25, info.samplerate);
+    WEAVE* weave = new_weave(0.25, 0.4, info.samplerate);
 
     /**************** processing loop that writes to the output ********************/
 
@@ -103,7 +104,8 @@ int main(int argc, char** argv)
             //
             float input = inframe[i];
             float dry = input * 0.5;
-            float wet = delay_tick(delay,input,0.45) * 0.5;
+            // float wet = delay_tick(delay,input,0.45) * 0.5;
+            float wet = weave_tick(weave, input) * 0.5;
 
             outframe[i] = dry + wet;
             //
@@ -136,6 +138,7 @@ exit:
     if(inframe)  free(inframe);
     if(outframe) free(outframe);
     destroy_block(delay);
+    unravel(weave);
 
     return 0;
 }
