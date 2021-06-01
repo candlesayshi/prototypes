@@ -135,10 +135,6 @@ float weave_tick(WEAVE* weave, float input)
     float outA, outB;
     float inA, inB;
 
-    unsigned long readposA, readposB;
-    float* bufA = weave->delayA->buffer;
-    float* bufB = weave->delayB->buffer;
-
     // get read position from delaytime
     outA = block_read(weave->delayA);
     outB = block_read(weave->delayB);
