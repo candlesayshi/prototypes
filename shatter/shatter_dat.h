@@ -36,6 +36,9 @@ float shard_tick(LAYER* layer, SHARD* shard, float* inframe, int* change_check, 
 // see if the shard is going to change (0 = no change, 1 = change)
 int shift_check(SHARD* curshard, double bias);
 
+// gets data about a shard and prints it to the standard output
+void observe_shard(int layer_num, SHARD* curshard, int srate);
+
 // layer destruction function
 void destroy_layers(LAYER** thislayer, int layers);
 

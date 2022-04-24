@@ -131,6 +131,23 @@ int shift_check(SHARD* curshard, double bias)
     }    
 }
 
+// gets data about a shard and prints it to the standard output
+void observe_shard(int layer_num, SHARD* curshard, int srate){
+    int layer = layer_num + 1;
+    long start_samp = curshard->start;
+    long end_samp = curshard->end;
+    long length_samp = end_samp - start_samp;
+    float start_secs = (float)start_samp / (float)srate;
+    float end_secs = (float)end_samp / (float)srate;
+    float length_secs = end_secs - start_secs;
+
+    printf("New shard collected in layer %d:\n"
+            "\tStart: %.3f seconds (%ld samples)\n"
+            "\tEnd: %.3f seconds (%ld samples)\n"
+            "\tLength: %.3f seconds (%ld samples)\n"
+            ,layer,start_secs,start_samp,end_secs,end_samp,length_secs,length_samp);
+}
+
 // layer destruction function
 void destroy_layers(LAYER** thislayer, int layers)
 {

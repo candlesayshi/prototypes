@@ -40,17 +40,23 @@ int main(int argc, char** argv)
     int layers;
     int stopped_layers = 0;
     long zc_count = 0;              // a counter to track zero crossings for building an array
+    int possible_shards = 0;        // used to calculate the number of possible shards that there are
     int zc_override = 0;            // flag to check for overriding the zero crossing check
     int near_zero_mode = 0;         // flag to change the zero crossing to a quietness detector
     double near_zero = 0.0;         // the value for what set the shards
     long* zero_crossings = NULL;    // array to hold the zero crossing locations
     long min = DEFAULTMIN;          // min and max of the shard size, should be user changable in time
     long max = DEFAULTMAX;
+    float start_lim_in = 0.0;       // limit the start and end points that shards can be collected from
+    float end_lim_in = 0.0;
+    long start_lim = 0;
+    long end_lim = 1;
     int min_override = 0;           // flags to track if the the min/max values are being overridden
     int max_override = 0;
     int change_check = 0;
     double bias = 0.75;             // sets the chance for the shards to shift to new configurations
     int tail = 1;                   // flag that determines if the tail of the layers plays after the shards deactivate
+    int list_shards = 0;            // flag that enables writing the shards to the output
     LAYER** curlayer = NULL;
     SHARD** curshard = NULL;
 
@@ -86,6 +92,9 @@ int main(int argc, char** argv)
                     return 1;
                 }
                 break;
+            case('l'):
+                list_shards = 1;
+                break;
             case('m'):
                 min_override = 1;
                 min = atoi(&(argv[1][2]));
@@ -98,10 +107,22 @@ int main(int argc, char** argv)
                 max_override = 1;
                 max = atoi(&(argv[1][2]));
                 if(max < 0 || max < min){
-                    printf("Maximum shard size cannot be < 0 or > minimum\n");
+                    printf("Maximum shard size cannot be < minimum\n");
                     return 1;
                 }
                 break;
+            case('s'):
+                start_lim_in = atof(&(argv[1][2]));
+                if(start_lim < 0.0){
+                    printf("Start point limit cannot be < 0\n");
+                    return 1;
+                }
+            case('e'):
+                end_lim_in = atof(&(argv[1][2]));
+                if(end_lim < 0.0){
+                    printf("End point limit cannot be < 0\n");
+                    return 1;
+                }
 			default:
 				break;
 			}
@@ -118,8 +139,14 @@ int main(int argc, char** argv)
                 "\t\t\tcrossings, allowing them to split anywhere.\n"
                 "\t\t-n :\tChanges the zero crossing check to use an amplitude\n"
                 "\t\t\tthreshold for determining where shards split (ex. -n0.01)\n"
+                "\t\t-s :\tIgnore zero crossings (or threshold points) before\n"
+                "\t\t\tthis position (in seconds) (ex. -s2.3)\n"
+                "\t\t-e :\tIgnore zero crossings (or threshold points) after\n"
+                "\t\t\tthis position (in seconds) (ex. -e58.2)\n"
                 "\t\t-t :\tStops processing after shards stop, forcing\n"
                 "\t\t\tthe audio to end immediately at length.\n"
+                "\t\t-l :\tLists shards when they are collected along with data\n"
+                "\t\t\tabout them. (Disables output progress display)\n"
                 "\t\t-b :\tSets the bias at which the shards become more\n"
                 "\t\t\tlikely to change with each play (0.0 < bias < 1.0)\n"
                 "\t\t\t(default bias: 0.75, 1.0 = never changes) (ex. -b0.5)\n"
@@ -162,7 +189,7 @@ int main(int argc, char** argv)
     }
 
     /**** necessary calculations ****/
-    filesize = info.frames;                         // get number of samples in input file
+    end_lim = filesize = info.frames;               // get number of samples in input file
     totalsamples = length_secs * info.samplerate;   // calculate size of output file
     if(min_override){                               // calculate min and max of shard size
         min = ((double)min * 0.001) * info.samplerate;
@@ -172,7 +199,20 @@ int main(int argc, char** argv)
     if(max_override){
         max = ((double)max * 0.001) * info.samplerate;
     } else {
-        max = filesize;
+        max = end_lim;
+    }
+    if(start_lim_in > 0.0){
+        float start_in_samps = (start_lim_in * (float)info.samplerate) + 0.5;
+        start_lim = (long)start_in_samps;
+    }
+    if(end_lim_in > 0.0){
+        float end_in_samps = (end_lim_in * (float)info.samplerate) + 0.5;
+        end_lim = (long)end_in_samps;
+    }
+    if(end_lim <= start_lim){
+        printf("Error!: End point limit is at or before the start point limit!\n");
+        error++;
+        goto exit;
     }
 
     // allocate memory for the I/O buffers
@@ -202,7 +242,7 @@ int main(int argc, char** argv)
         buffer, but I was having problems with the zero_crossings array. So, I'm
         keeping it compartmentalizing it all for now */
     if(zc_override){
-        for(long i = 0; i < filesize; i++){
+        for(long i = start_lim; i < end_lim; i++){
             /* there's obviously a much more memory efficent way to 
                do this, but I'm implementing this so far to check the sound.
                Post-listen: after a few tests the end result doesn't really
@@ -213,7 +253,7 @@ int main(int argc, char** argv)
         }
     } else if (near_zero_mode){
         printf("Scanning for near zero points... ");
-        for(long i = 0; i < filesize; i++){
+        for(long i = start_lim; i < end_lim; i++){
             double current_value = fabs(inframe[i]);
             if(current_value <= near_zero){
                 zero_crossings = (long*)realloc(zero_crossings,sizeof(long) * (++zc_count + 1)); // with guard point
@@ -224,7 +264,7 @@ int main(int argc, char** argv)
         printf("\rScanning for near zero points... %ld found.\n",zc_count);
     } else {
         printf("Scanning for zero crossings... ");
-        for(long i = 0; i < filesize; i++){
+        for(long i = 0; i < end_lim; i++){
             if(inframe[i] == 0.0){
                 zero_crossings = (long*)realloc(zero_crossings,sizeof(long) * (++zc_count + 1)); // with guard point
                 zero_crossings[zc_count-1] = i;
@@ -233,7 +273,11 @@ int main(int argc, char** argv)
         }
         printf("\rScanning for zero crossings... %ld found.\n",zc_count);
     }
-    zero_crossings[zc_count] = filesize; // make last value the end of file
+    if(end_lim != filesize){
+        zero_crossings[zc_count] = zero_crossings[zc_count-1]; // just make sure it's a zc
+    } else
+        zero_crossings[zc_count] = end_lim; // make last value the end of file
+    
 
     printf("Shattering input... ");
     // build the layers
@@ -247,15 +291,34 @@ int main(int argc, char** argv)
             goto exit;
         }
     }
+    if(list_shards) printf("Collecting first shards...\n");
 
     // build and prepare the shards
     curshard = (SHARD**)malloc(sizeof(SHARD*) * layers);
     for(int i = 0; i < layers; i++){
         curshard[i] = (SHARD*)malloc(sizeof(SHARD));
         new_shard(curshard[i],zero_crossings,zc_count,min,max);
+        if(list_shards){
+            observe_shard(i,curshard[i],info.samplerate);
+        }
         activate_shard(curshard[i]);
     }
     printf("Done.\n");
+
+    // this way of tracking the number of possible shards could be used 
+    // as a better method for creating shards... will give it thought
+    for(int i = 0; i < zc_count; i++){
+        long base = zero_crossings[i];
+        int j = 1;
+        while((zero_crossings[i + j] - zero_crossings[i]) < min && (i + j) < zc_count)
+            j++;
+        for(;(i + j) < zc_count; j++){
+            if((zero_crossings[i + j] - zero_crossings[i]) > max) break;
+            possible_shards++;
+        }
+    }
+
+    printf("Shattered into %d possible shard(s)...\n",possible_shards);
 
     /**** get the output ready ****/
     outframe = (float*)malloc(sizeof(float) * nframes * info.channels);
@@ -271,7 +334,8 @@ int main(int argc, char** argv)
         error++;
         goto exit;
     }
-
+    if(list_shards)
+        printf("Writing output...\n");
     /**** processing loop that writes to the output ****/
     while(frameswrite < totalsamples){
         for(long i = 0; i < nframes; i++){
@@ -281,12 +345,14 @@ int main(int argc, char** argv)
                 curframe += shard_tick(curlayer[j],curshard[j],inframe,&change_check,bias);
                 if(change_check == 1){
                     new_shard(curshard[j],zero_crossings,zc_count,min,max);
+                    if(list_shards) observe_shard(j,curshard[j],info.samplerate);
                     activate_shard(curshard[j]);
                 }
             }
             outframe[i] = curframe;
         }
-        printf("\rWriting output... %.0f%% done.",((double)frameswrite / (double)totalsamples) * 100.0);
+        if(!list_shards)
+            printf("\rWriting output... %.0f%% done.",((double)frameswrite / (double)totalsamples) * 100.0);
         frameswrite += sf_write_float(outfile,outframe,nframes);
     }
     printf("\nCleaning shards... ");
